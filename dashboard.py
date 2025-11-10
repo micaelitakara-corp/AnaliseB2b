@@ -92,8 +92,25 @@ def carregar_dados():
         df_pedidos_unicos['Mês'] = df_pedidos_unicos['Creation Date'].dt.month
         
         # --- NOVAS COLUNAS PARA PADRÃO TEMPORAL ---
+        # Dia da Semana (0=Segunda, 6=Domingo)
         df_pedidos_unicos['Dia_Semana_Num'] = df_pedidos_unicos['Creation Date'].dt.dayofweek
-        df_pedidos_unicos['Dia_Semana_Nome'] = df_pedidos_unicos['Creation Date'].dt.day_name(locale='pt_BR.UTF-8')
+        
+        # ======= A CORREÇÃO ESTÁ AQUI =======
+        # Mapeia os números (0-6) para os nomes em PT-BR manualmente
+        # Isso evita o erro de 'locale' no servidor
+        mapa_dias = {
+            0: 'Segunda-feira',
+            1: 'Terça-feira',
+            2: 'Quarta-feira',
+            3: 'Quinta-feira',
+            4: 'Sexta-feira',
+            5: 'Sábado',
+            6: 'Domingo'
+        }
+        df_pedidos_unicos['Dia_Semana_Nome'] = df_pedidos_unicos['Dia_Semana_Num'].map(mapa_dias)
+        # ======================================
+        
+        # Dia do Mês
         df_pedidos_unicos['Dia_do_Mes'] = df_pedidos_unicos['Creation Date'].dt.day
         
     
@@ -254,10 +271,7 @@ else:
         Meses_das_Compras=('Mês', lambda s: list(sorted(s.unique())))
     ).reset_index()
     
-    # ======= CORREÇÃO MOVIDA PARA CÁ =======
-    # Renomear 'Corporate_Name' para 'Nome da Empresa' IMEDIATAMENTE
     analise_clientes = analise_clientes.rename(columns={'Corporate_Name': 'Nome da Empresa'})
-    # ======================================
     
     analise_clientes['Receita_Total'] = analise_clientes['Receita_Total'].round(2)
     
@@ -265,7 +279,6 @@ else:
         by='Total_de_Pedidos', ascending=False
     )
     
-    # Agora a coluna 'Nome da Empresa' já existe
     analise_clientes_ordenado = analise_clientes_ordenado[['Nome da Empresa', 'Corporate Document', 'Total_de_Pedidos', 'Receita_Total', 'Meses_das_Compras']]
 
     st.dataframe(
@@ -429,7 +442,6 @@ else:
     st.markdown("Esta análise segmenta clientes pela sua última data de compra, com base nos filtros selecionados.")
     
     # 1. Preparar os dados para segmentação
-    # 'analise_clientes' já tem 'Nome da Empresa' (com espaço) e está agrupado por 'Corporate Document'
     segment_df = analise_clientes.copy()
     
     # 2. Calcular Recência
@@ -455,7 +467,7 @@ else:
     # 5. Mostrar os segmentos em 3 colunas
     col_seg1, col_seg2, col_seg3 = st.columns(3)
     
-    # A coluna 'Nome da Empresa' agora existe em 'segment_df'
+    # 'analise_clientes' já foi renomeada para 'Nome da Empresa'
     cols_to_show = ['Nome da Empresa', 'Corporate Document', 'Recency', 'Total_de_Pedidos', 'Receita_Total']
     
     with col_seg1:
